@@ -68,8 +68,7 @@ public class ChunkedFileOutputStream extends OutputStream {
     }
 
     private boolean nextFile() {
-        int files =  (int)  (written / outFile.getChunkSize());
-        return files > filesCount;
+       return (written % outFile.getChunkSize()) == 0;
     }
 
     private int placeLeft() {
