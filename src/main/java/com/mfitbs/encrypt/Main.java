@@ -1,9 +1,12 @@
 package com.mfitbs.encrypt;
 
+import com.mfitbs.encrypt.io.FileOutputStreamFactory;
 import com.mfitbs.encrypt.util.IOUtil;
 import org.apache.commons.cli.*;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -40,12 +43,16 @@ public class Main {
                         .build())
                 .addOption(Option.builder(OUT)
                         .hasArg()
-                        .desc("out file")
+                        .desc("out directory")
                         .build())
                 .addOption(Option.builder(KEY_FILE)
                         .hasArg()
                         .desc("key file")
-                        .build());
+                        .build())
+                .addOption(Option.builder(SPLIT)
+                    .hasArg()
+                    .desc("split size")
+                    .build());
 
 
         CommandLine commandLine = parser.parse(options, args);
@@ -56,18 +63,21 @@ public class Main {
             return;
         }
 
-        final String outFile = getOut(commandLine);
         final String keyFile = getKeyFile(commandLine);
 
         if (commandLine.hasOption(ENCRYPT)) {
             String toEncrypt = commandLine.getOptionValue(ENCRYPT);
-            encrypt(toEncrypt, outFile, keyFile);
+            encrypt(toEncrypt,
+                    getOutFile(commandLine, toEncrypt),
+                    keyFile);
             return;
         }
 
         if (commandLine.hasOption(DECRYPT)) {
             String toDecrypt = commandLine.getOptionValue(DECRYPT);
-            decrypt(toDecrypt, outFile, keyFile);
+            decrypt(toDecrypt,
+                    getOutFile(commandLine, toDecrypt),
+                    keyFile);
             return;
         }
     }
@@ -92,36 +102,31 @@ public class Main {
         System.out.println("publicFile:" + publicFile);
     }
 
-    private static void encrypt(final String infile, final String outFile, String pubKeyFile)
+    private static void encrypt(final String infile,
+                                final OutFile outFile,
+                                final String pubKeyFile)
             throws IOException {
-        perform(infile, outFile, pubKeyFile, (ctx) -> {
-            ctx.getEncryptFile().encrypt(
-                    ctx.getInFile(),
-                    ctx.getOutFile(),
-                    ctx.getKey());
+        perform(infile,
+                outFile,
+                pubKeyFile,
+                (ctx) -> {
+            ctx.getEncryptFile().encrypt(ctx.getInFile(), ctx.getKey());
         });
     }
 
-    private static void decrypt(final String infile, final String outFile, String privKeyFile)
+    private static void decrypt(final String infile,
+                                final OutFile outFile,
+                                String privKeyFile)
             throws IOException {
         perform(infile, outFile, privKeyFile, (ctx) -> {
-            ctx.getEncryptFile().decrypt(
-                    ctx.getInFile(),
-                    ctx.getOutFile(),
+            ctx.getEncryptFile().decrypt(ctx.getInFile(),
                     ctx.getKey());
         });
-    }
-
-    private static String getOut(CommandLine commandLine) {
-        if (commandLine.hasOption(OUT)) {
-            return commandLine.getOptionValue(OUT);
-        }
-        return null;
     }
 
     private static void perform(
             final String inFile,
-            String outFile,
+            final OutFile outFile,
             final String someKey,
             MessHandler<EncryptionContext> consumer
     ) throws IOException {
@@ -133,23 +138,21 @@ public class Main {
             throw new IllegalArgumentException("key file cannot be empty");
         }
 
-        if (StringUtils.isEmpty(outFile)) {
-            outFile = inFile + ".encr";
-        }
-
         System.out.println("Using");
         System.out.println("inFile:" + inFile);
-        System.out.println("outFile:" + outFile);
+        System.out.println("outFileFolder:" + outFile.getOutFileFolder());
+        System.out.println("outFileBase:" + outFile.getOutFileBase());
         System.out.println("someKey:" + someKey);
 
 
         SymetricEncryption encryptSymetric = new AES();
         RSA encryptAsimetric = new RSA();
         SimetricKeyGenerator keyGenerator = new AESKeyGenerator();
-
         Encrypt encrypt = new Encrypt(encryptSymetric, encryptAsimetric, keyGenerator);
+        FileOutputStreamFactory fileOutputStreamFactory =
+                new FileOutputStreamFactory(outFile);
 
-        EncryptFile encryptFile = new EncryptFile(encrypt);
+        EncryptFile encryptFile = new EncryptFile(encrypt, fileOutputStreamFactory);
 
         byte[] key = IOUtil.readFile(someKey);
 
@@ -166,4 +169,32 @@ public class Main {
         }
         return null;
     }
+
+    private static Long getChunksizeInBytes(final CommandLine commandLine) {
+        final String value = commandLine.getOptionValue(SPLIT);
+        if (value == null) {
+            return null;
+        }
+
+        final int numberPart = Integer.parseInt(value.substring(0, value.length() - 1));
+        final String measurePart = value.substring(value.length() - 1);
+
+        return numberPart * DataMeasure.create(measurePart).orElseThrow(() -> {
+            throw new IllegalArgumentException(
+                    String.format("measure: %s not found", value));
+        }).getBytes();
+    }
+
+    private static OutFile getOutFile(CommandLine commandLine, String inFileName) {
+        String outFolder = commandLine.getOptionValue(OUT);
+        Long chunkSize = getChunksizeInBytes(commandLine);
+
+        OutFile outFile = new OutFile(
+                outFolder,
+                new File(inFileName).getName(),
+                chunkSize);
+
+        return outFile;
+    }
+
 }

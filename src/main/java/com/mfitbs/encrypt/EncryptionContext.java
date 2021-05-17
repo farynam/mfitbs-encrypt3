@@ -9,7 +9,7 @@ import lombok.Getter;
 public class EncryptionContext {
 
     final String inFile;
-    final String outFile;
+    final OutFile outFile;
     final byte [] key;
     final EncryptFile encryptFile;
 }

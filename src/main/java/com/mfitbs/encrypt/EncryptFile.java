@@ -1,34 +1,35 @@
 package com.mfitbs.encrypt;
 
+import com.mfitbs.encrypt.io.FileOutputStreamFactory;
+import lombok.RequiredArgsConstructor;
+
 import java.io.*;
 
+@RequiredArgsConstructor
 public class EncryptFile {
 
     private final Encrypt encrypt;
+    private final FileOutputStreamFactory fileOutputStreamFactory;
 
-    public EncryptFile(Encrypt encrypt) {
-        this.encrypt = encrypt;
+    public void encrypt(String in, byte [] pubKey) throws IOException {
+        encrypt(new File(in), pubKey);
     }
 
-    public void encrypt(String in, String out, byte [] pubKey) throws IOException {
-        encrypt(new File(in), new File(out), pubKey);
+    public void decrypt(String in, byte [] privKey) throws IOException {
+        decrypt(new File(in), privKey);
     }
 
-    public void decrypt(String in, String out, byte [] privKey) throws IOException {
-        decrypt(new File(in), new File(out), privKey);
-    }
-
-    public void encrypt(File in, File out, byte [] pubKey) throws IOException {
+    public void encrypt(File in, byte [] pubKey) throws IOException {
         try (FileInputStream fis = new FileInputStream(in);
-             FileOutputStream fout = new FileOutputStream(out)) {
-            encrypt.encrypt(fis, fout, pubKey);
+             OutputStream out = fileOutputStreamFactory.create()) {
+            encrypt.encrypt(fis, out, pubKey);
         }
     }
 
-    public void decrypt(File in, File out, byte [] privKey) throws IOException {
+    public void decrypt(File in, byte [] privKey) throws IOException {
         try (FileInputStream fis = new FileInputStream(in);
-             FileOutputStream fout = new FileOutputStream(out)) {
-            encrypt.decrypt(fis, fout, privKey);
+             OutputStream out = fileOutputStreamFactory.create()) {
+            encrypt.decrypt(fis, out, privKey);
         }
     }
 }
