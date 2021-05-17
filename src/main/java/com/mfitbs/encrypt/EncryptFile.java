@@ -32,4 +32,5 @@ public class EncryptFile {
             encrypt.decrypt(fis, out, privKey);
         }
     }
+
 }
