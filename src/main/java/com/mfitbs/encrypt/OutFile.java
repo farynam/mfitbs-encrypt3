@@ -11,7 +11,7 @@ public class OutFile {
     final String outFileBase;
     final Long chunkSize;
 
-    public String createEncryptedFileNameBase(Integer index) {
+    public String createFileNameBase(Integer index) {
         String fileNumber = "";
 
         if (isChunked()) {
@@ -20,8 +20,8 @@ public class OutFile {
         return String.format("%s/%s%s.encr", outFileFolder, outFileBase, fileNumber);
     }
 
-    public String createEncryptedFileNameBase() {
-        return createEncryptedFileNameBase(null);
+    public String createFileNameBase() {
+        return createFileNameBase(null);
     }
 
     public boolean isChunked() {

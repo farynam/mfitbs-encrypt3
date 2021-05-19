@@ -1,6 +1,7 @@
 package com.mfitbs.encrypt.io;
 
 import com.mfitbs.encrypt.OutFile;
+import com.mfitbs.encrypt.util.IOUtil;
 import lombok.RequiredArgsConstructor;
 import java.io.*;
 import java.util.UUID;
@@ -9,24 +10,25 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ChunkedFileOutputStream extends OutputStream {
 
-    final static int UUID_LENGTH_IN_BYTES = 36;
-
-    private FileOutputStream last;
     private FileOutputStream current;
-    private long written;
+    private long currentWritten;
     private int filesCount;
     private final OutFile outFile;
+    private byte [] currentUUID;
+    private byte [] lastUUID;
+    private boolean closed;
+    private long bufferSize;
 
     @Override
     public void write(int b) throws IOException {
         handleFileCreation();
         current.write(b);
-        written++;
+        currentWritten++;
     }
 
     @Override
     public void write(byte[] b) throws IOException {
-        this.write(b, 0, b.length);
+        current.write(b, 0, b.length);
     }
 
     @Override
@@ -41,7 +43,7 @@ public class ChunkedFileOutputStream extends OutputStream {
             current.write(b, offset, writeCount);
             offset += writeCount;
             writeLeft -= writeCount;
-            written += writeCount;
+            currentWritten += writeCount;
         }
     }
 
@@ -52,40 +54,45 @@ public class ChunkedFileOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
+        if (!closed) {
+            writeUUID(current, lastUUID);//write UUID for the last
+        }
         current.close();
+        closed = true;
     }
 
     private void handleFileCreation() throws IOException {
         if (current == null) {
             current = generateFile();
+            lastUUID = generateUUID();
+            writeUUID(current, lastUUID);
+            bufferSize = getBufferSize();
         } else if (nextFile()) {
-            byte [] uuid = generateUUID();
-            writeUUID(current, uuid);//end of the last file
+            currentUUID = generateUUID();
+            writeUUID(current, currentUUID);//end of the last file
             current.close();
-            last = current;
             current = generateFile();
-            writeUUID(current, uuid);//begining of the new file
+            writeUUID(current, currentUUID);//begining of the new file
         }
     }
 
     private FileOutputStream generateFile() throws FileNotFoundException {
+        currentWritten = 0;
         filesCount++;
-        String nameFileName = outFile.createEncryptedFileNameBase(filesCount);
+        String nameFileName = outFile.createFileNameBase(filesCount);
         return new FileOutputStream(nameFileName);
     }
 
-    private long getBufferSize(boolean singleUUID) {
-        int n = singleUUID ? 1 : 2;
-        return outFile.getChunkSize() - n * UUID_LENGTH_IN_BYTES;
+    private long getBufferSize() {
+        return outFile.getChunkSize();
     }
 
     private boolean nextFile() {
-       return written % getBufferSize(isFirst()) == 0;
+       return placeLeft() == 0;
     }
 
     private int placeLeft() {
-        long bufferSize = getBufferSize(isFirst());
-        return (int) (bufferSize - (written % bufferSize));
+        return (int) (bufferSize - currentWritten - IOUtil.UUID_LENGTH_IN_BYTES);
     }
 
     private byte [] generateUUID() {
@@ -94,10 +101,7 @@ public class ChunkedFileOutputStream extends OutputStream {
 
     private void writeUUID(OutputStream out, byte [] uuid) throws IOException {
         out.write(uuid);
-        written += UUID_LENGTH_IN_BYTES;
+        currentWritten += IOUtil.UUID_LENGTH_IN_BYTES;
     }
 
-    private boolean isFirst() {
-        return last == null;
-    }
  }

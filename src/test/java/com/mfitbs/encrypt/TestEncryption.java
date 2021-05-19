@@ -1,3 +1,5 @@
+package com.mfitbs.encrypt;
+
 import com.mfitbs.encrypt.*;
 import com.mfitbs.encrypt.util.IOUtil;
 import org.junit.jupiter.api.Test;

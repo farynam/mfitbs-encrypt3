@@ -6,11 +6,15 @@ import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
 
 import java.io.*;
+import java.util.Arrays;
+import java.util.UUID;
 
 public abstract class IOUtil {
 
     final static String PUB_KEY = "PUBLIC KEY";
     final static String PRIV_KEY = "PRIVATE KEY";
+
+    public final static int UUID_LENGTH_IN_BYTES = 36;
 
     public static void copy(InputStream is, OutputStream os) throws IOException {
         int i;
@@ -24,12 +28,17 @@ public abstract class IOUtil {
     public static byte [] readBytesCount(InputStream is, int count) throws IOException {
 
         byte [] buf = new byte[count];
-
-        if (is.read(buf, 0, count) != count) {
+        int read = is.read(buf, 0, count);
+        if (read != count) {
             throw new IOException("cannot read " + count + " bytes");
         }
 
         return buf;
+    }
+
+    public static byte [] readLastBytesCount(InputStream is, int count) throws IOException {
+        byte [] all = is.readAllBytes();
+        return  Arrays.copyOfRange(all, all.length - count, count);
     }
 
     public static void writetofile(String fileName, byte [] bytes) throws IOException {
@@ -64,6 +73,26 @@ public abstract class IOUtil {
             PemWriter pemWriter = new PemWriter(new OutputStreamWriter(out));
             pemWriter.writeObject(new PemObject(type, bytes));
             pemWriter.flush();
+        }
+    }
+
+    public static UUID readID(InputStream is) throws IOException {
+        return UUID.nameUUIDFromBytes(readBytesCount(is, UUID_LENGTH_IN_BYTES));
+    }
+
+    public static UUID readID(File file) throws IOException {
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+            return readID(fileInputStream);
+        }
+    }
+
+    public static UUID readRef(InputStream is) throws IOException {
+        return UUID.nameUUIDFromBytes(readBytesCount(is, UUID_LENGTH_IN_BYTES));
+    }
+
+    public static UUID readRef(File file) throws IOException {
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+            return readRef(fileInputStream);
         }
     }
 }

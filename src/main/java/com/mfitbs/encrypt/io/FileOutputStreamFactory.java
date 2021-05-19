@@ -18,7 +18,7 @@ public class FileOutputStreamFactory {
             return new ChunkedFileOutputStream(outFile);
         }
 
-        return new FileOutputStream(outFile.createEncryptedFileNameBase());
+        return new FileOutputStream(outFile.createFileNameBase());
     }
 
 

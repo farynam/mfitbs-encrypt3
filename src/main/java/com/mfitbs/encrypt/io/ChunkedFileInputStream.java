@@ -1,14 +1,119 @@
 package com.mfitbs.encrypt.io;
 
+import com.mfitbs.encrypt.util.IOUtil;
+import org.apache.commons.lang3.NotImplementedException;
+
 import java.io.*;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class ChunkedFileInputStream extends InputStream {
 
-    private FileInputStream current;
-    private int total;
+    private List<File> files;
+    private InputStream current;
+    private UUID end;
+    private File currentFile;
+    private long currentRead;
+    private long currentSize;
+    private Optional<BiConsumer<File, UUID>> nextFileOpenedConsumer;
 
-    void init(String folder) {
 
+    public void init(String file) throws IOException {
+        init(new File(file));
+    }
+
+    public void init(File file) throws IOException {
+        files = Arrays.stream(file.getParentFile().listFiles())
+                .collect(Collectors.toList());
+        current = new FileInputStream(file);
+        end = IOUtil.readID(current);
+        updateCurrentFileInfo(file);
+    }
+
+    @Override
+    public int read(byte[] b) throws IOException {
+        return read(b, 0, b.length);
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        int left = len;
+
+        while (left > 0) {
+            if (isAtTheEndOfFile()) {
+                UUID next = IOUtil.readRef(current);
+                if (isTheEnd(next)) {
+                    return -1;
+                }
+                openNew(next);
+            }
+
+            long allowed = getAllowedToRead();
+            long toRead = Math.min(left, allowed);
+            int read = current.read(b, off, (int) toRead);
+
+            if (read == -1) {
+                throw new IllegalStateException();
+            }
+
+            left -= read;
+            off += read;
+            currentRead += read;
+        }
+
+        return len;
+    }
+
+    @Override
+    public byte[] readAllBytes() throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public byte[] readNBytes(int len) throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public int readNBytes(byte[] b, int off, int len) throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public long skip(long n) throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public int available() throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void close() throws IOException {
+        current.close();
+    }
+
+    @Override
+    public synchronized void mark(int readlimit) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public synchronized void reset() throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public boolean markSupported() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public long transferTo(OutputStream out) throws IOException {
+        throw new NotImplementedException();
     }
 
     @Override
@@ -16,63 +121,48 @@ public class ChunkedFileInputStream extends InputStream {
         return 0;
     }
 
-    @Override
-    public int read(byte[] b) throws IOException {
-        return super.read(b);
+    public void setNextFileOpenedConsumer(BiConsumer<File, UUID> nextFileOpenedConsumer) {
+        this.nextFileOpenedConsumer = Optional.ofNullable(nextFileOpenedConsumer);
     }
 
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-        return super.read(b, off, len);
+    private long getCurrentSize() {
+        return currentFile.length();
     }
 
-    @Override
-    public byte[] readAllBytes() throws IOException {
-        return super.readAllBytes();
+    private long getAllowedToRead() {
+        return currentSize - IOUtil.UUID_LENGTH_IN_BYTES - currentRead;
     }
 
-    @Override
-    public byte[] readNBytes(int len) throws IOException {
-        return super.readNBytes(len);
+    private boolean isAtTheEndOfFile() {
+        return (currentSize - currentRead) == IOUtil.UUID_LENGTH_IN_BYTES;
     }
 
-    @Override
-    public int readNBytes(byte[] b, int off, int len) throws IOException {
-        return super.readNBytes(b, off, len);
+    private boolean isTheEnd(UUID id) {
+        return id.equals(end);
     }
 
-    @Override
-    public long skip(long n) throws IOException {
-        return super.skip(n);
+    private void openNew(UUID next) throws IOException {
+        Iterator<File> it = files.iterator();
+        while (it.hasNext()) {
+            File f = it.next();
+            InputStream is = new FileInputStream(f);
+            if (IOUtil.readID(is).equals(next)) {
+                it.remove();
+                current.close();
+                current = is;
+                updateCurrentFileInfo(f);
+
+                nextFileOpenedConsumer.ifPresent(c -> c.accept(f, next));
+                return;
+            }
+            is.close();
+        }
+        throw new IllegalStateException("missing file with UUID" + next);
     }
 
-    @Override
-    public int available() throws IOException {
-        return super.available();
-    }
-
-    @Override
-    public void close() throws IOException {
-        super.close();
-    }
-
-    @Override
-    public synchronized void mark(int readlimit) {
-        super.mark(readlimit);
-    }
-
-    @Override
-    public synchronized void reset() throws IOException {
-        super.reset();
-    }
-
-    @Override
-    public boolean markSupported() {
-        return super.markSupported();
-    }
-
-    @Override
-    public long transferTo(OutputStream out) throws IOException {
-        return super.transferTo(out);
+    private void updateCurrentFileInfo(File file) {
+        currentRead = IOUtil.UUID_LENGTH_IN_BYTES;
+        currentFile = file;
+        currentSize = file.length();
     }
 }
