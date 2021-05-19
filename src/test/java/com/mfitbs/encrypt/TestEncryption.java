@@ -1,10 +1,12 @@
 package com.mfitbs.encrypt;
 
-import com.mfitbs.encrypt.*;
 import com.mfitbs.encrypt.util.IOUtil;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.spec.PKCS8EncodedKeySpec;

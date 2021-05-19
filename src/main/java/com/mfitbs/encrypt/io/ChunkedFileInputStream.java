@@ -6,7 +6,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import java.io.*;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ChunkedFileInputStream extends InputStream {
@@ -29,6 +28,7 @@ public class ChunkedFileInputStream extends InputStream {
                 .collect(Collectors.toList());
         current = new FileInputStream(file);
         end = IOUtil.readID(current);
+        nextFileOpenedConsumer.ifPresent(c -> c.accept(file, end));
         updateCurrentFileInfo(file);
     }
 

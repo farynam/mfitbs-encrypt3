@@ -1,6 +1,5 @@
 package com.mfitbs.encrypt;
 
-import com.mfitbs.encrypt.OutFile;
 import com.mfitbs.encrypt.io.ChunkedFileOutputStream;
 import com.mfitbs.encrypt.util.IOUtil;
 import org.junit.jupiter.api.Test;
@@ -12,7 +11,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class TestChunkedOutput {
     final int numWrites = 10;
@@ -21,7 +21,7 @@ public class TestChunkedOutput {
     @Test
     public void test() throws IOException {
 
-        OutFile outFile = new OutFile("test/out/",
+        OutFile outFile = new OutFile("test/testOutput/out/",
                 "file",
                 1024l
         );

@@ -4,7 +4,8 @@ import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.Optional;
-import static java.lang.Math.*;
+
+import static java.lang.Math.pow;
 
 @Getter
 public enum DataMeasure {

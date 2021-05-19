@@ -1,7 +1,6 @@
 package com.mfitbs.encrypt;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 
 @Getter

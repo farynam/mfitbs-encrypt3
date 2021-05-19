@@ -3,7 +3,6 @@ package com.mfitbs.encrypt;
 import com.mfitbs.encrypt.io.FileOutputStreamFactory;
 import com.mfitbs.encrypt.util.IOUtil;
 import org.apache.commons.cli.*;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;

@@ -3,7 +3,9 @@ package com.mfitbs.encrypt;
 import com.mfitbs.encrypt.util.IOUtil;
 import lombok.SneakyThrows;
 
-import javax.crypto.*;
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.InputStream;
