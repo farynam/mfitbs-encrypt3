@@ -16,12 +16,14 @@ public abstract class IOUtil {
     public final static int UUID_LENGTH_IN_BYTES = 36;
 
     public static void copy(InputStream is, OutputStream os) throws IOException {
-        int i;
-        byte[] b = new byte[1024];
-        while ((i = is.read(b)) != -1) {
-            os.write(b, 0, i);
+        int read;
+        byte[] b = new byte[16];
+
+        while ((read = is.read(b)) != -1) {
+            os.write(b, 0, read);
+            os.flush();
         }
-        os.flush();
+
     }
 
     public static byte [] readBytesCount(InputStream is, int count) throws IOException {
@@ -49,13 +51,18 @@ public abstract class IOUtil {
 
 
     public static byte [] readFile(String fileName) throws IOException {
-        try (FileInputStream fin = new FileInputStream(new File(fileName));
+        return readFile(new File(fileName));
+    }
+
+    public static byte [] readFile(File file) throws IOException {
+        try (FileInputStream fin = new FileInputStream(file);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             copy(fin, out);
             out.flush();
             return out.toByteArray();
         }
     }
+
 
     public static byte [] readPEM(String fileName) throws IOException {
         try (FileInputStream fis = new FileInputStream(fileName);

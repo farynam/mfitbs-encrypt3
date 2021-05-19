@@ -11,12 +11,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestChunkedOutput {
     final int numWrites = 10;
     final int bufSize = 1024;
+    final String testData = "Ala ma kota";
 
     @Test
     public void test() throws IOException {
@@ -32,8 +32,11 @@ public class TestChunkedOutput {
                      new ChunkedFileOutputStream(outFile)) {
 
             int n = numWrites;
+            long counter = 0;
             while (n > 0) {
-                chunkedFileOutputStream.write(new byte[bufSize], 0, bufSize);
+                byte [] buf = new byte[bufSize];
+                counter = countRecords(counter, buf);
+                chunkedFileOutputStream.write(buf, 0, bufSize);
                 n--;
             }
         }
@@ -41,6 +44,20 @@ public class TestChunkedOutput {
         assertEquals(numWrites + 1, outFolder.listFiles().length);
         checkFilesSize(outFolder, outFile.getChunkSize());
         checkLastFileSize(outFolder);
+        //checkFilesContainsTestData(outFolder, testData);
+    }
+
+    private void checkFilesContainsTestData(File dir, String testData) {
+        List<File> files = getSorted(dir);
+
+        files.forEach((f) -> {
+            try {
+                String data = new String(IOUtil.readFile(f));
+                assertTrue(data.contains(testData), String.format("contents differ:%s", f.getName()));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void checkFilesSize(File dir, long limit) {
@@ -73,5 +90,24 @@ public class TestChunkedOutput {
         long lastSize = totalSize % bufSize + IOUtil.UUID_LENGTH_IN_BYTES * 2;
 
         assertEquals(lastSize , getLast(outFolder).length());
+    }
+
+    private long countRecords(long counter, byte [] buffer) {
+        int index = 0;
+        while (index < buffer.length) {
+            String num = "" + counter + ",";
+            int numLen = num.getBytes().length;
+            if ((index + numLen) > buffer.length) {
+                num = "#";
+            } else {
+                counter++;
+            }
+
+            numLen = num.getBytes().length;
+
+            System.arraycopy(num.getBytes(), 0, buffer, index, numLen);
+            index += num.getBytes().length;
+        }
+        return counter;
     }
 }

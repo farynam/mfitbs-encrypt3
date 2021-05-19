@@ -1,6 +1,5 @@
 package com.mfitbs.encrypt;
 
-import com.mfitbs.encrypt.io.FileOutputStreamFactory;
 import com.mfitbs.encrypt.util.IOUtil;
 import org.apache.commons.cli.*;
 import org.apache.commons.lang3.StringUtils;
@@ -63,12 +62,15 @@ public class Main {
         }
 
         final String keyFile = getKeyFile(commandLine);
+        final boolean split = getSplit(commandLine);
 
         if (commandLine.hasOption(ENCRYPT)) {
             String toEncrypt = commandLine.getOptionValue(ENCRYPT);
             encrypt(toEncrypt,
                     getOutFile(commandLine, toEncrypt),
-                    keyFile);
+                    keyFile,
+                    split
+            );
             return;
         }
 
@@ -76,7 +78,8 @@ public class Main {
             String toDecrypt = commandLine.getOptionValue(DECRYPT);
             decrypt(toDecrypt,
                     getOutFile(commandLine, toDecrypt),
-                    keyFile);
+                    keyFile,
+                    split);
             return;
         }
     }
@@ -103,11 +106,13 @@ public class Main {
 
     private static void encrypt(final String infile,
                                 final OutFile outFile,
-                                final String pubKeyFile)
+                                final String pubKeyFile,
+                                final boolean split)
             throws IOException {
         perform(infile,
                 outFile,
                 pubKeyFile,
+                split,
                 (ctx) -> {
             ctx.getEncryptFile().encrypt(ctx.getInFile(), ctx.getKey());
         });
@@ -115,9 +120,14 @@ public class Main {
 
     private static void decrypt(final String infile,
                                 final OutFile outFile,
-                                String privKeyFile)
+                                String privKeyFile,
+                                final boolean split)
             throws IOException {
-        perform(infile, outFile, privKeyFile, (ctx) -> {
+        perform(infile,
+                outFile,
+                privKeyFile,
+                split,
+                (ctx) -> {
             ctx.getEncryptFile().decrypt(ctx.getInFile(),
                     ctx.getKey());
         });
@@ -127,6 +137,7 @@ public class Main {
             final String inFile,
             final OutFile outFile,
             final String someKey,
+            final boolean split,
             MessHandler<EncryptionContext> consumer
     ) throws IOException {
         if (StringUtils.isEmpty(inFile)) {
@@ -148,10 +159,8 @@ public class Main {
         RSA encryptAsimetric = new RSA();
         SimetricKeyGenerator keyGenerator = new AESKeyGenerator();
         Encrypt encrypt = new Encrypt(encryptSymetric, encryptAsimetric, keyGenerator);
-        FileOutputStreamFactory fileOutputStreamFactory =
-                new FileOutputStreamFactory(outFile);
 
-        EncryptFile encryptFile = new EncryptFile(encrypt, fileOutputStreamFactory);
+        EncryptFile encryptFile = new EncryptFile(encrypt, outFile, split);
 
         byte[] key = IOUtil.readFile(someKey);
 
@@ -196,4 +205,7 @@ public class Main {
         return outFile;
     }
 
+    private static boolean getSplit(CommandLine commandLine) {
+        return commandLine.hasOption(SPLIT);
+    }
 }

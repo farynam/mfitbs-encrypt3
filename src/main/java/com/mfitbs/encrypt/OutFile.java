@@ -14,7 +14,7 @@ public class OutFile {
     public String createFileNameBase(Integer index) {
         String fileNumber = "";
 
-        if (isChunked()) {
+        if (isChunked() && index != null) {
             fileNumber = "_" + index;
         }
         return String.format("%s/%s%s.encr", outFileFolder, outFileBase, fileNumber);
@@ -25,6 +25,6 @@ public class OutFile {
     }
 
     public boolean isChunked() {
-        return chunkSize > 1;
+        return chunkSize != null && chunkSize > 1;
     }
 }

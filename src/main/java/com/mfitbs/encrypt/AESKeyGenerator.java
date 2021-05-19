@@ -7,7 +7,7 @@ import javax.crypto.SecretKey;
 
 public class AESKeyGenerator implements  SimetricKeyGenerator {
 
-    public static final int AES_Key_Size = 256;
+    public static final int AES_Key_Size = 256;//bites
 
 
     @SneakyThrows
@@ -21,6 +21,6 @@ public class AESKeyGenerator implements  SimetricKeyGenerator {
 
     @Override
     public int size() {
-        return AES_Key_Size;
+        return 32; //bytes
     }
 }

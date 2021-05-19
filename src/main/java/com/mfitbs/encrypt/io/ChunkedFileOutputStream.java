@@ -16,6 +16,8 @@ public class ChunkedFileOutputStream extends OutputStream {
 
     private FileOutputStream current;
     private long currentWritten;
+    private long totalDataWritten;
+    private long totalMetaWritten;
     private int filesCount;
     private final OutFile outFile;
     private byte [] currentUUID;
@@ -28,11 +30,12 @@ public class ChunkedFileOutputStream extends OutputStream {
         handleFileCreation();
         current.write(b);
         currentWritten++;
+        totalDataWritten++;
     }
 
     @Override
     public void write(byte[] b) throws IOException {
-        current.write(b, 0, b.length);
+        write(b, 0, b.length);
     }
 
     @Override
@@ -48,6 +51,7 @@ public class ChunkedFileOutputStream extends OutputStream {
             offset += writeCount;
             writeLeft -= writeCount;
             currentWritten += writeCount;
+            totalDataWritten += writeCount;
         }
     }
 
@@ -60,6 +64,11 @@ public class ChunkedFileOutputStream extends OutputStream {
     public void close() throws IOException {
         if (!closed) {
             writeUUID(current, lastUUID);//write UUID for the last
+            System.out.println(this.getClass().toString());
+            System.out.println(
+                    String.format("Total data written:%d", totalDataWritten));
+            System.out.println(
+                    String.format("Total meta written:%d", totalMetaWritten));
         }
         current.close();
         closed = true;
@@ -106,6 +115,10 @@ public class ChunkedFileOutputStream extends OutputStream {
     private void writeUUID(OutputStream out, byte [] uuid) throws IOException {
         out.write(uuid);
         currentWritten += IOUtil.UUID_LENGTH_IN_BYTES;
+        totalMetaWritten += IOUtil.UUID_LENGTH_IN_BYTES;
     }
 
- }
+    public long getTotalDataWritten() {
+        return totalDataWritten;
+    }
+}

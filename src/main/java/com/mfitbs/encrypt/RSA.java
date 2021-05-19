@@ -56,7 +56,6 @@ public class RSA {
 
         Cipher cipher = Cipher.getInstance(mTransformation);
         cipher.init(Cipher.PRIVATE_KEY, mPrivateKey);
-
         decrypted = cipher.doFinal(encrypted);
 
         return decrypted;

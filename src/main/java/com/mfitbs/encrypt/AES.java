@@ -32,7 +32,7 @@ public class AES implements SymetricEncryption {
 
     @SneakyThrows
     private Cipher getAESCipher(int mode) {
-        Cipher aesCipher =  Cipher.getInstance("AES");
+        Cipher aesCipher =  Cipher.getInstance("AES/ECB/NoPadding");
         aesCipher.init(mode, aeskeySpec);
         return aesCipher;
     }
