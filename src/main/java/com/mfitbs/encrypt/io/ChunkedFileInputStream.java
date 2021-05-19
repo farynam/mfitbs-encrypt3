@@ -13,7 +13,6 @@ public class ChunkedFileInputStream extends InputStream {
     private List<File> files;
     private InputStream current;
     private UUID end;
-    private File currentFile;
     private long currentRead;
     private long currentSize;
     private Optional<BiConsumer<File, UUID>> nextFileOpenedConsumer;
@@ -118,15 +117,11 @@ public class ChunkedFileInputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        return 0;
+        throw new NotImplementedException();
     }
 
     public void setNextFileOpenedConsumer(BiConsumer<File, UUID> nextFileOpenedConsumer) {
         this.nextFileOpenedConsumer = Optional.ofNullable(nextFileOpenedConsumer);
-    }
-
-    private long getCurrentSize() {
-        return currentFile.length();
     }
 
     private long getAllowedToRead() {
@@ -162,7 +157,6 @@ public class ChunkedFileInputStream extends InputStream {
 
     private void updateCurrentFileInfo(File file) {
         currentRead = IOUtil.UUID_LENGTH_IN_BYTES;
-        currentFile = file;
         currentSize = file.length();
     }
 }
